@@ -42,33 +42,56 @@ def server(host, port):
                     # try and receive data from the socket
                     data = s.recv(1024)
                     if data:
-                        # if there is data add it to the sockets respective msg queue
+                        # check if it is a new client sending username
+                        if s not in clients.keys():
+                            clients[s] = data.decode()
+                            print(f"New connection from {s.getpeername()}.")
+                            #s.send(f"Welcome to the server {clients[s]}.".encode())
+                            message_queues[s].put(f"Welcome to the server {clients[s]}.".encode())
+                            msg = f"{clients[s]} has joined".encode()
+                            #message_queues[s].put(f"{clients[s]} has joined".encode())
+                        else:
+                            # append username to message
+                            msg = f"{clients[s]}: ".encode() + data
+                        # if there is data add it to all the sockets' msg queues
                         print(f"received '{data}' from { s.getpeername() }")
-                        message_queues[s].put(data)
+                        for sock in message_queues.keys():
+                            if sock != s:
+                                message_queues[sock].put(msg)
                         # add the socket to the outputs stream
-                        if s not in outputs:
-                            outputs.append(s)
+                            if sock not in outputs:
+                                outputs.append(sock)
                     else:
                         # otherwise, if there is no data the socket must be closed as the client has disconnected
                         print(f"Closing connection after reading no data: {client_addr}")
                         if s in outputs:
                             outputs.remove(s)
+                        clients.pop(s)
                         inputs.remove(s)
                         s.close()
                         del message_queues[s]
-            # handles writing of sockets
+            # handles writing of sockets, for each socket that is writable (w)
             for s in w:
+                # get the next message from s's queue
                 try:
+                    # append username to front of message
                     next_msg = message_queues[s].get_nowait()
                 except queue.Empty:
+                    #continue
                     print(f"output queue for {s.getpeername()} is empty")
                     outputs.remove(s)
                 else:
-                    print(f"sending '{next_msg}' to {s.getpeername()}")
+                    print(w)
                     s.send(next_msg)
+                    """
+                    for sock in w:
+                        print(f"sending '{next_msg}' to {sock.getpeername()}")
+                        sock.send(next_msg)
+                    """
             # handles errors in sockets
             for s in e:
                 print(f"Handling exception for {s.getpeername()}")
+                clients.pop(s)
                 inputs.remove(s)
                 if s in outputs:
                     outputs.remove(s)
