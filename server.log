@@ -1,0 +1,8 @@
+INFO:root:New connection from ('127.0.0.1', 63100) (user1).
+INFO:root:New connection from ('127.0.0.1', 63104) (user2).
+INFO:root:received 'b'hello'' from ('127.0.0.1', 63100) (user1).
+INFO:root:received 'b'hi'' from ('127.0.0.1', 63104) (user2).
+INFO:root:received 'b'bye'' from ('127.0.0.1', 63100) (user1).
+INFO:root:received 'b'bye'' from ('127.0.0.1', 63104) (user2).
+INFO:root:Closing connection after reading no data:  ('127.0.0.1', 63100) (user1)
+INFO:root:Closing connection after reading no data:  ('127.0.0.1', 63104) (user2)

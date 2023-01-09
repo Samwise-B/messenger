@@ -1,6 +1,8 @@
 import socket
 import select
 import queue
+import logging
+import sys
 
 clients = {}
 
@@ -40,12 +42,16 @@ def server(host, port):
                     message_queues[conn] = queue.Queue()
                 else:
                     # try and receive data from the socket
-                    data = s.recv(1024)
+                    try:
+                        data = s.recv(1024)
+                    except ConnectionResetError:
+                        data = False
                     if data:
                         # check if it is a new client sending username
                         if s not in clients.keys():
                             clients[s] = data.decode()
                             print(f"New connection from {s.getpeername()}.")
+                            logging.info(f"New connection from {s.getpeername()} ({clients[s]}).")
                             #s.send(f"Welcome to the server {clients[s]}.".encode())
                             message_queues[s].put(f"Welcome to the server {clients[s]}.".encode())
                             msg = f"{clients[s]} has joined".encode()
@@ -53,8 +59,10 @@ def server(host, port):
                         else:
                             # append username to message
                             msg = f"{clients[s]}: ".encode() + data
+                            logging.info(f"received '{data}' from { s.getpeername() } ({clients[s]}).")
                         # if there is data add it to all the sockets' msg queues
                         print(f"received '{data}' from { s.getpeername() }")
+                        
                         for sock in message_queues.keys():
                             if sock != s:
                                 message_queues[sock].put(msg)
@@ -63,13 +71,19 @@ def server(host, port):
                                 outputs.append(sock)
                     else:
                         # otherwise, if there is no data the socket must be closed as the client has disconnected
-                        print(f"Closing connection after reading no data: {client_addr}")
+                        print(f"Closing connection after reading no data: {s.getpeername()} ({clients[s]})")
+                        logging.info(f"Closing connection after reading no data:  {s.getpeername()} ({clients[s]})")
+                        username = clients[s]
                         if s in outputs:
                             outputs.remove(s)
                         clients.pop(s)
                         inputs.remove(s)
                         s.close()
                         del message_queues[s]
+                        for sock in message_queues.keys():
+                            message_queues[sock].put(f"{username} has left.".encode())
+                            if sock not in outputs:
+                                outputs.append(sock)
             # handles writing of sockets, for each socket that is writable (w)
             for s in w:
                 # get the next message from s's queue
@@ -103,6 +117,17 @@ def server(host, port):
     finally:
         server.close()
 
+def main():
+    logging.basicConfig(filename="server.log", encoding='utf-8', level=logging.INFO)
+
+    argc = len(sys.argv)
+    if (argc == 2):
+        port = int(sys.argv[1])
+    else:
+        print("Usage: python client.py [port]")
+        return 0
+    
+    server('127.0.0.1', port)
 
 if __name__ == '__main__':
-    server('127.0.0.1', 1337)
+    main()

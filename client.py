@@ -1,21 +1,26 @@
 import socket
 import queue
 import threading
-from datetime import datetime
+import sys
 
 
 #http://pymotw.com/2/select/
 #https://realpython.com/intro-to-python-threading/
 
 messages = queue.Queue()
+quit_flag = False
+
+def close_sock(s):
+    quit_flag = True
+    s.close()
 
 def add_input(s):
     while True:
         # get input from user to send to the server
         msg = input("")
         if msg == "::quit" or msg == "::q":
-            s.close()
-            exit(0)
+            close_sock(s)
+            break
         else:
             messages.put(msg)
         
@@ -45,9 +50,19 @@ def client(uname, address, port):
 
         # Once connected, loop until user quits
         while True:
+            if quit_flag:
+                print("Goodbye")
+                s.close()
+                return 0
+
             # if there is data to be read, receive and print it
             # receive any messages from server
-            data = s.recv(1024).decode()
+            try:
+                data = s.recv(1024).decode()
+            except ConnectionAbortedError:
+                print("Goodbye")
+                return 0
+
             if data:
                 print(data)
 
@@ -79,8 +94,16 @@ def client(uname, address, port):
 
 
 def main():
-    # TODO: add command line args
-    client("bob", '127.0.0.1', 1337)
+    argc = len(sys.argv)
+    if (argc == 4):
+        uname = sys.argv[1]
+        hostname = sys.argv[2]
+        port = int(sys.argv[3])
+    else:
+        print("Usage: python client.py [username] [hostname] [port]")
+        return 1    
+    
+    client(uname, hostname, port)
 
 if __name__ == '__main__':
     main()
