@@ -51,14 +51,15 @@ The server logs each client’s activity in server.log, including:
 - Client disconnection events.
 ## Example Log
 Below is an example of entries in server.log when two clients connect, chat, and disconnect:
-`less
+```
 [2023-11-09 12:34:56] Client John connected from 127.0.0.1:12000
 [2023-11-09 12:35:01] [John]: Hello everyone!
 [2023-11-09 12:36:00] Client Jane connected from 127.0.0.1:12001
 [2023-11-09 12:36:05] [Jane]: Hi John!
 [2023-11-09 12:37:00] [John] has left
 [2023-11-09 12:37:02] Client John disconnected
-`
+```
+
 # Future Improvements
 - Private Messaging: Extend the application to allow private, direct messages between clients.
 - Message Persistence: Enable message storage, allowing clients to retrieve chat history upon reconnection.
